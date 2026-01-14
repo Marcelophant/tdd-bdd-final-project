@@ -121,6 +121,7 @@ class TestProductRoutes(TestCase):
         # Make sure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
+        logging.debug("Location is %s", location)
 
         # Check the data is correct
         new_product = response.get_json()
@@ -134,15 +135,15 @@ class TestProductRoutes(TestCase):
         # Uncomment this code once READ is implemented
         #
 
-        # # Check that the location header was correct
-        # response = self.client.get(location)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # new_product = response.get_json()
-        # self.assertEqual(new_product["name"], test_product.name)
-        # self.assertEqual(new_product["description"], test_product.description)
-        # self.assertEqual(Decimal(new_product["price"]), test_product.price)
-        # self.assertEqual(new_product["available"], test_product.available)
-        # self.assertEqual(new_product["category"], test_product.category.name)
+        # Check that the location header was correct
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_product = response.get_json()
+        self.assertEqual(new_product["name"], test_product.name)
+        self.assertEqual(new_product["description"], test_product.description)
+        self.assertEqual(Decimal(new_product["price"]), test_product.price)
+        self.assertEqual(new_product["available"], test_product.available)
+        self.assertEqual(new_product["category"], test_product.category.name)
 
     def test_create_product_with_no_name(self):
         """It should not Create a Product without a name"""
@@ -177,6 +178,61 @@ class TestProductRoutes(TestCase):
         """It should return an error"""
         response = self.client.get(f"{BASE_URL}/51")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_product(self):
+        """It should update a product"""
+        test_product = ProductFactory()
+        new_product = test_product.serialize()
+        resp = self.client.post(BASE_URL, json=new_product)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        new_product = resp.get_json()
+        new_product["description"] = "Unknown"
+        resp = self.client.put(f"{BASE_URL}/{new_product['id']}", json=new_product)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        updated_product = resp.get_json()
+        self.assertEqual(updated_product["description"], "Unknown")
+
+    def test_update_not_found_product(self):
+        """It should return an error for updating a product that does not exist"""
+        response = self.client.put(f"{BASE_URL}/51")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_product(self):
+        """It should delete a product"""
+        test_product = ProductFactory()
+        new_product = test_product.serialize()
+        resp = self.client.post(BASE_URL, json=new_product)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        new_product = resp.get_json()
+        resp = self.client.delete(f"{BASE_URL}/{new_product['id']}")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.client.get(f"{BASE_URL}/{new_product['id']}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_all(self):
+        """It should list all products in the database"""
+        self._create_products(5)
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        all_data = resp.get_json()
+        self.assertEqual(len(all_data), self.get_product_count())
+
+    def test_list_all_empty_database(self):
+        """It should list all products in the database"""
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_by_name(self):
+        """It should list all products by name"""
+        pass
+
+    def test_list_by_category(self):
+        """It should list all products by category"""
+        pass
+
+    def test_list_by_availability(self):
+        """It should list all products by availability"""
+        pass
 
     ######################################################################
     # Utility functions
