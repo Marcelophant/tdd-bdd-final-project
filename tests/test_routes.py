@@ -28,6 +28,7 @@ import os
 import logging
 from decimal import Decimal
 from unittest import TestCase
+from urllib.parse import quote_plus
 from service import app
 from service.common import status
 from service.models import db, init_db, Product
@@ -224,15 +225,38 @@ class TestProductRoutes(TestCase):
 
     def test_list_by_name(self):
         """It should list all products by name"""
-        pass
+        products = self._create_products(10)
+        product_name = products[0].name
+        product_count = len([product for product in products if product.name == product_name])
+        resp = self.client.get(BASE_URL, query_string=f"name={quote_plus(product_name)}")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        all_products = resp.get_json()
+        self.assertEqual(len(all_products), product_count)
+        for product in all_products:
+            self.assertEqual(product['name'], product_name)
 
     def test_list_by_category(self):
         """It should list all products by category"""
-        pass
+        products = self._create_products(10)
+        product_category = products[0].category
+        product_count = len([product for product in products if product.category == product_category])
+        resp = self.client.get(BASE_URL, query_string=f"category={product_category.name}")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        all_products = resp.get_json()
+        self.assertEqual(len(all_products), product_count)
+        for product in all_products:
+            self.assertEqual(product['category'], product_category.name)
 
     def test_list_by_availability(self):
         """It should list all products by availability"""
-        pass
+        products = self._create_products(10)
+        product_count = len([product for product in products if product.available is True])
+        resp = self.client.get(BASE_URL, query_string="available=True")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        all_products = resp.get_json()
+        self.assertEqual(len(all_products), product_count)
+        for product in all_products:
+            self.assertEqual(product['available'], True)
 
     ######################################################################
     # Utility functions
