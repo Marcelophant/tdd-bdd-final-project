@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -222,3 +222,19 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.price, first_price)
+
+    def test_wrong_data1(self):
+        """It should return an error for wrong data type"""
+        product = ProductFactory()
+        logging.debug("Test Product: %s", product)
+        product.create()
+        test_dict = {
+            'id': 123,
+            'name': 0,
+            'description': 'Bar bin baz',
+            'price': 123.45,
+            'available': False,
+            'category': Category.UNKNOWN
+        }
+        with self.assertRaises(DataValidationError):
+            product.deserialize(test_dict)
