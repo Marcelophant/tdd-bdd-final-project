@@ -132,3 +132,33 @@ def step_impl(context, element_name, text_string):
     )
     element.clear()
     element.send_keys(text_string)
+
+@when(u'I press the "{button_name}" button')
+def step_impl(context, button_name):
+    button_id = button_name.lower() + '-btn'
+    context.driver.find_element(By.ID, button_id).click()
+
+@then(u'I should see the message "{message}"')
+def step_impl(context, message):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "flash_message"),
+            message
+        )
+    )
+    assert(found)
+
+@then(u'I should see "{some_text}" in the results')
+def step_impl(context, some_text):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "search_results"),
+            some_text
+        )
+    )
+    assert(found)
+
+@then(u'I should not see "{some_text}" in the results')
+def step_impl(context,  some_text):
+    element = context.driver.find_element_by_id('search_results')
+    assert(some_text not in element.text)
